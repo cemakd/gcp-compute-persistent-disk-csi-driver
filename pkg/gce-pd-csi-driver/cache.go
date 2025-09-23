@@ -537,19 +537,23 @@ func isCachingSetup(mainLvName string) (error, bool) {
 	return nil, false
 }
 
-func fetchChunkSizeKiB(cacheSize string) (string, error) {
-	var chunkSize float64
+func fetchChunkSizeKiB(_ string) (string, error) {
+	targetChunkSizeKiB := "16384"
+	klog.V(2).Infof("BENCHMARK-OVERRIDE: Forcing chunk size to %sKiB", targetChunkSizeKiB)
+	return targetChunkSizeKiB + "KiB", nil
+	// var chunkSize float64
 
-	cacheSizeInt, err := strconv.ParseInt(cacheSize, 10, 64)
-	if err != nil {
-		return "0", err
-	}
-	// Chunksize should be divisible by 32Kib so we need (chunksize/32*1024)*32*1024
-	chunkSize = (float64(cacheSizeInt) * GiB) / float64(maxAllowedChunks)
-	chunkSize = math.Round(chunkSize/(32*KiB)) * (32 * KiB)
-	chunkSize = math.Min(math.Max(chunkSize, minChunkSize), maxChunkSize) / KiB
-	// default chunk size unit KiB
-	return strconv.FormatInt(int64(chunkSize), 10) + "KiB", nil
+	// cacheSize = strings.TrimSuffix(cacheSize, "GiB")
+	// cacheSizeInt, err := strconv.ParseInt(cacheSize, 10, 64)
+	// if err != nil {
+	// 	return "0", err
+	// }
+	// // Chunksize should be divisible by 32Kib so we need (chunksize/32*1024)*32*1024
+	// chunkSize = (float64(cacheSizeInt) * GiB) / float64(maxAllowedChunks)
+	// chunkSize = math.Round(chunkSize/(32*KiB)) * (32 * KiB)
+	// chunkSize = math.Min(math.Max(chunkSize, minChunkSize), maxChunkSize) / KiB
+	// // default chunk size unit KiB
+	// return strconv.FormatInt(int64(chunkSize), 10) + "KiB", nil
 }
 
 func InitializeDataCacheNode(nodeId string) error {
@@ -658,10 +662,8 @@ func addRaidedLSSDToVg(vgName, lssdPath string) error {
 
 func fetchPvSizeGiB() (string, error) {
 	args := []string{
-		"--select",
-		"-o",
+		"-o", "pv_name,pv_size",
 		"--noheadings",
-		"pv_size",
 		"--units=b",
 	}
 	// RAIDed device is always registered with its /dev/md127 equivalent in VG so cannot check it directly based on the RAIDed LSSD path which could be /dev/md/csi-driver-data-cache
